@@ -1,0 +1,938 @@
+---
+title: "Plotly for R Tutorial"
+output: html_document
+---
+
+#### DISCLAIMER: This notebook is from what I was able to teach myself about Plotly in a relatively short time. Thus, anything I wrote or coded here may not be wholly accurate, thoroughly descriptive, perfectly optimal or efficient, or in line with standard Plotly syntax and practices of experienced users. It's an extremely sophisticated and in-depth library, so I suggest that in addition to this brief tutorial, everyone look at the official documentation and/or watch a few YouTube tutorials to get a better understanding of how to use it. Additionally, I do not use R personally, so I apologize if this R version of the Plotly tutorial looks a bit off or weird to those of you who are more familiar with R.
+
+
+## Installations
+
+You'll want to install the following packages for the hackathon. The top two of the bottom three are just datatsets used in this tutorial, so while they may be useful to have to play around with, they're optional. The last install is for Dash, which unfortunately is not on CRAN and thus must be obtained from the GitHub page, making it a bit complicated to download. Dash is also optional, but has one cell that uses it.
+
+```{r}
+# install.packages("plotly")
+# install.packages("shiny")
+# install.packages("ggplot2")
+# install.packages("dplyr")
+# install.packages("jsonlite")
+# install.packages("htmlwidgets")
+
+ install.packages("gapminder")
+install.packages("quantmod")
+ devtools::install_github("plotly/dashR", ref="dev", upgrade = TRUE)
+```
+
+
+## Import libraries
+
+
+```{r, message = FALSE, warning = FALSE}
+library(plotly)
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(jsonlite)
+library(htmlwidgets)
+
+library(gapminder)
+library(quantmod)
+```
+
+## ggplot2 and Plotly
+For those of you intimately familiar with ggplot2, know that Plotly has phenomenal compatibility and integration with ggplot2. After creating a ggplot2 plot, you can convert it to a Plotly plot with just a single line of code using the ggplotly() function. Depending on what you're trying to do once its a Plotly plot, there may be scenarios where it's a bit more complicated than this, but for the most part this should be all you should need to do. This is great if you already know ggplot2 well and want to take advantage of Plotly's interactivity features without having to learn a whole new plotting library in detail. You can leanr more about this from the Plotly website here: https://plotly.com/ggplot2/
+
+## What is Plotly?
+
+Plotly is an open source Python library (and R library) that allows for fast and easy creation of over 40 types of INTERACTIVE plots, allowing you increase the amount of information a plot can display while simultaneously simplying how its created. An interactive plot is not static, and instead can change in one or more ways when using your cursor to interact with it. 
+
+Main page: https://plotly.com/r/
+Official forum for questions: https://community.plotly.com/c/plotly-r-matlab-julia-net
+Good YouTube tutorials/demonstrations of Plotly for R:
+- https://www.youtube.com/watch?v=o4KhFP31Ihw
+- https://www.youtube.com/watch?v=cdSKN3LozbM
+
+Below is a great demonstration of what Plotly can allow you to create in just a few lines of code.
+
+
+
+```{r}
+df
+```
+
+```{r}
+df <- gapminder 
+fig <- plot_ly(data = df, 
+               x = ~gdpPercap, 
+               y = ~lifeExp, 
+               # size = ~pop, #Specifiying that the point size be based on the population size causes an error for me for some odd reason, maybe your results will vary if you want to uncomment this and try it out
+               color = ~continent, 
+               text = ~country, 
+               frame = ~year, 
+               type = 'scatter', 
+               mode = 'markers',
+               marker = list(sizemode = 'diameter', sizeref = 2e5, sizemin = 1)) 
+fig <- fig %>%
+  layout(xaxis = list(type = 'log', range = c(log10(100), log10(100000)), title = 'GDP per Capita'),
+         yaxis = list(range = c(25, 90), title = 'Life Expectancy'))
+         
+fig
+
+```
+
+### Dash
+
+Dash is a web application framework for Python that allows you to create interactive web applications. It's built on top of Plotly, so you can use all of the Plotly functionality you've learned here for Dash app development. Dash plots tends to allow for far more complex interactivity than Plotly-only plots, as you can more easily combine multiple features like sliders and buttons (discussed a little later on) to work in tandem due to its dynamic "callback" capabilities. You can even have plots that dynamically adjust their content based on point(s) you've selected in another plot.
+
+IF YOU'RE BRAVE ENOUGH to learn about Dash in addition to already learning about Plotly... I've made have a short tutorial on Dash that breaks down the following code if you're interested in potentially incorporating Dash into your hackathon project.
+
+IF YOU HAVE DASH INSTALLED, you can uncomment the cell below and run it. 
+# ```{r}
+# library(dash)
+# 
+# df <- read.csv('https://plotly.github.io/datasets/country_indicators.csv', header = TRUE, sep = ",")
+# available_indicators <- unique(df$Indicator.Name)
+# option_indicator <- lapply(available_indicators, function(x) list(label = x, value = x))
+# 
+# app <- dash_app()
+# app %>% add_stylesheet('https://codepen.io/chriddyp/pen/bWLwgP.css')
+# 
+# app %>% set_layout(
+#   div(
+#     style = list(
+#       borderBottom = 'thin lightgrey solid',
+#       backgroundColor = 'rgb(250, 250, 250)',
+#       padding = '10px 5px'
+#     ),
+#     dashDataTable(
+#       id = 'data-table',
+#       columns = lapply(names(df), function(colName) {
+#         list(id = colName, name = colName)
+#       }),
+#       data = head(df, 10),
+#       page_size = 10,
+#       filter_action = 'native',
+#       sort_action = 'native',
+#       style_table = list(overflowX = 'auto'),
+#       style_cell = list(textAlign = 'left')
+#     ),
+#     div(
+#       dccDropdown(
+#         id = 'crossfilter-xaxis-column',
+#         options = option_indicator,
+#         value = 'Fertility rate, total (births per woman)'
+#       ),
+#       dccRadioItems(
+#         id = 'crossfilter-xaxis-type',
+#         options = list(list(label = 'Linear', value = 'linear'),
+#                        list(label = 'Log', value = 'log')),
+#         value = 'linear',
+#         labelStyle = list(display = 'inline-block')
+#       ),
+#       style = list(width = '49%', display = 'inline-block')
+#     ),
+# 
+#     div(
+#       dccDropdown(
+#         id = 'crossfilter-yaxis-column',
+#         options = option_indicator,
+#         value = 'Life expectancy at birth, total (years)'
+#       ),
+#       dccRadioItems(
+#         id = 'crossfilter-yaxis-type',
+#         options = list(list(label = 'Linear', value = 'linear'),
+#                        list(label = 'Log', value = 'log')),
+#         value = 'linear',
+#         labelStyle = list(display = 'inline-block')
+#       ),
+#       style = list(width = '49%', float = 'right', display = 'inline-block')
+#     ),
+# 
+#     div(
+#       dccGraph(
+#         id = 'crossfilter-indicator-scatter',
+#         hoverData = list(points = list(list(customdata = 'Japan')))
+#       ),
+#       style = list(
+#         width = '49%',
+#         display = 'inline-block',
+#         padding = '0 20'
+#       )
+#     ),
+# 
+#     div(
+#       dccGraph(id='x-time-series'),
+#       dccGraph(id='y-time-series'),
+#       style = list(display = 'inline-block', width = '49%')
+#     ),
+# 
+#     div(
+#       style = list(display = 'flex', justifyContent = 'space-between', padding = '0px 20px 20px 20px'),
+# 
+#       div(
+#         div('Year:', style = list(color = 'red', marginBottom = '5px')),
+#         dccSlider(
+#           id = 'crossfilter-year--slider',
+#           min = 0,
+#           max = length(unique(df$Year)) - 1,
+#           marks = unique(df$Year),
+#           value = length(unique(df$Year)) - 1
+#         ),
+#         style = list(width = '48%')
+#       ),
+# 
+#       div(
+#         div('Year Range Slider:', style = list(color = 'green', marginBottom = '5px')),
+#         dccRangeSlider(
+#           id = 'crossfilter-year-range--slider',
+#           min = min(df$Year),
+#           max = max(df$Year),
+#           value = list(min(df$Year), max(df$Year)),
+#           marks = as.list(setNames(as.list(unique(df$Year)), unique(df$Year))),
+#           step = 1
+#         ),
+#         style = list(width = '48%')
+#       )
+#     )
+#   )
+# )
+# 
+# app %>% add_callback(
+#   output('crossfilter-indicator-scatter', 'figure'),
+#   list(
+#     input('crossfilter-xaxis-column', 'value'),
+#     input('crossfilter-yaxis-column', 'value'),
+#     input('crossfilter-xaxis-type', 'value'),
+#     input('crossfilter-yaxis-type', 'value'),
+#     input('crossfilter-year--slider', 'value')
+#   ),
+#   function(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, year_value) {
+#     selected_year <- unique(df$Year)[year_value]
+#     traces <- list()
+# 
+#     if (selected_year %in% unique(df$Year)) {
+#       filtered_df <- df[df[["Year"]] %in% selected_year, ]
+#       traces[[1]] <- list(
+#         x = filtered_df[filtered_df$Indicator.Name %in% xaxis_column_name, "Value"],
+#         y = filtered_df[filtered_df$Indicator.Name %in% yaxis_column_name, "Value"],
+#         opacity=0.7,
+#         text = filtered_df[filtered_df$Indicator.Name %in% yaxis_column_name, "Country.Name"],
+#         customdata = filtered_df[filtered_df$Indicator.Name %in% yaxis_column_name, "Country.Name"],
+#         mode = 'markers',
+#         marker = list(
+#           'size'= 15,
+#           'opacity' = 0.5,
+#           'line' = list('width' = 0.5, 'color' = 'white')
+#         )
+#       )
+# 
+#       list(
+#         'data' = traces,
+#         'layout'= list(
+#           xaxis = list('title' = xaxis_column_name, 'type' = xaxis_type),
+#           yaxis = list('title' = yaxis_column_name, 'type' = yaxis_type),
+#           margin = list('l' = 40, 'b' = 30, 't' = 10, 'r' = 0),
+#           height = 450,
+#           hovermode = 'closest'
+#         )
+#       )
+#     }
+#   }
+# )
+# 
+# create_time_series <- function(dff, axis_type, title) {
+#   list(
+#     'data' = list(list(
+#       x = dff[['Year']],
+#       y = dff[['Value']],
+#       mode = 'lines+markers'
+#     )),
+#     'layout' = list(
+#       height = 225,
+#       margin = list('l' = 20, 'b' = 30, 'r' = 10, 't' = 10),
+#       'annotations' = list(list(
+#         x = 0, 'y' = 0.85, xanchor = 'left', yanchor = 'bottom',
+#         xref = 'paper', yref = 'paper', showarrow = FALSE,
+#         align = 'left', bgcolor = 'rgba(255, 255, 255, 0.5)',
+#         text = title[1]
+#       )),
+#       yaxis = list(type = axis_type),
+#       xaxis = list(showgrid = FALSE)
+#     )
+#   )
+# }
+# 
+# app %>% add_callback(
+#   output('x-time-series', 'figure'),
+#   list(
+#     input('crossfilter-indicator-scatter', 'hoverData'),
+#     input('crossfilter-xaxis-column', 'value'),
+#     input('crossfilter-xaxis-type', 'value'),
+#     input('crossfilter-year-range--slider', 'value')
+#   ),
+#   function(hoverData, xaxis_column_name, axis_type, year_range) {
+#     Country.Name <- hoverData$points[[1]]$customdata
+#     dff <- df[df[["Country.Name"]] %in% Country.Name, ]
+#     dff <- dff[dff[["Indicator.Name"]] %in% xaxis_column_name, ]
+#     dff <- dff[dff[["Year"]] >= year_range[1] & dff[["Year"]] <= year_range[2], ]
+#     title <- paste(c(Country.Name, xaxis_column_name), sep = '<br>')
+#     create_time_series(dff, axis_type, title)
+#   }
+# )
+# 
+# app %>% add_callback(
+#   output('y-time-series', 'figure'),
+#   list(
+#     input('crossfilter-indicator-scatter', 'hoverData'),
+#     input('crossfilter-yaxis-column', 'value'),
+#     input('crossfilter-yaxis-type', 'value'),
+#     input('crossfilter-year-range--slider', 'value')
+#   ),
+#   function(hoverData, yaxis_column_name, axis_type, year_range) {
+#     dff <- df[df[["Country.Name"]] %in% hoverData$points[[1]]$customdata, ]
+#     dff <- dff[dff[["Indicator.Name"]] %in% yaxis_column_name, ]
+#     dff <- dff[dff[["Year"]] >= year_range[1] & dff[["Year"]] <= year_range[2], ]
+#     create_time_series(dff, axis_type, yaxis_column_name)
+#   }
+# )
+# 
+# port = 8000
+# print(paste0('Dash app running on http://127.0.0.1:', port, '/'))
+# app %>% run_app(port = port)
+# 
+# ```
+
+Not only are Plotly plots phenomenal for personal visualization in your code editor, they can also saved saved as standalone HTML files or published to web applications using Dash for sharing with others. Plots can also be saved in static formats like PNG, SVG, and PDF if you need to, but lose their interactive nature when doing so.
+
+Additionally, Plotly plots are just JSON objects under the hood, making them easily storable and loadable, and thus able to be easily shared or moved between languages like Python and R. For example, here's how you can convert a Plotly plot to a JSON format, and then feed it right back in to Plotly to recreate the plot:
+
+```{r}
+# Create a basic bar chart
+fig <- plot_ly(x = c(1, 2, 3), y = c(1, 3, 2), type = 'bar')
+
+# Convert the Plotly figure to JSON format
+as_json <- plotly_json(fig, jsonedit = FALSE)
+cat("Here's a peek at what a Plotly figure looks like when converted to a JSON format:\n")
+cat(substr(as_json, 1, 250), "...\n")
+
+# Convert the JSON-serializable format back to a Plotly figure
+as_dataframe <- plotly:::from_JSON(as_json)
+fig_from_json <- plot_ly() %>%
+  add_trace(x = as_dataframe$data[[1]]$x, y = as_dataframe$data[[1]]$y, type = 'bar')
+fig_from_json
+```
+
+
+
+Here's a brief example of how to build a Plotly plot from scratch. This is a simple line plot of GDP per capita over time, using the gapminder dataset. 
+
+
+```{r}
+df <- gapminder
+head(df)
+```
+
+
+This code tells plotly to use the df dataframe, with the x-axis being the year column and the y-axis being the gdpPercap column. The plot type is set to 'scatter' and the mode is set to 'markers+lines', meaning that the plot will contain both the point markers and lines connecting them like a line. Using "layout", we can then customize aspects of the layout of the plot like the title and axis labels. Lastly, to display the plot, we just add "fig" at the bottom.
+
+```{r}
+fig <- plot_ly(df, x = ~year, y = ~gdpPercap, type = 'scatter', mode = 'markers+lines')
+fig <- fig %>% layout(title = 'GDP per Capita Over Time',
+         xaxis = list(title = 'Year'),
+         yaxis = list(title = 'GDP per Capita'))
+fig
+```
+
+
+Here's the same thing as above, but with some slight modifications. The first is the "%>%" operator, which is a pipe operator that allows you to chain together multiple functions in a single line. You may recognize it if you use Tidyverse. The second is that, rather than telling it we want to use the "df" dataset and the "year" and "gdpPercap" columns, we're just telling it to grab the data itself as ~df\$year and ~df\$gdpPercap. Third, Plotly supports easily layering multiple plot types on top of each other, so for example, if we wanted to add in a bar chart as well, we instead treat the scatter plot and bar chart as separate traces that we add to the plot using add_trace().
+
+```{r}
+df <- gapminder
+fig <- plot_ly() %>%
+  add_trace(x = ~df$year, y = ~df$gdpPercap, type = 'scatter', mode = 'markers+lines', name = 'GDP per Capita') %>%
+  add_trace(x = ~df$year, y = ~df$gdpPercap, type = 'bar', name = 'GDP per Capita') %>%
+  layout(title = 'GDP Per Capita Over Time',
+         xaxis = list(title = 'Year'),
+         yaxis = list(title = 'GDP per Capita'))
+fig
+```
+
+
+
+
+
+
+## Plotly's interactivity features
+
+Outputted plots are interactive at a basic level by default when using a supported code editor (which primarily includes RStudio and Visual Studio Code from what I know)
+
+### Toolbar
+
+Using the icons in the upper right toolbar of the plot, you can...
+- Hover over points to see basic information about them
+- Click on legend items to hide or show their corresponding data/trace on the plot
+- Zoom in and out by clicking and dragging to specify a rectangle you want to zoom into
+- Pan around the graph
+- Reset the plot back to normal if you altered the viewing window
+- Autoscale the axes
+- Box/lasso select points of interest
+- Save the plot as a PNG
+
+```{r}
+data <- mtcars
+fig <- plot_ly(data, 
+               x = ~mpg, 
+               y = ~wt, 
+               color = ~cyl, 
+               type = 'scatter', 
+               mode = 'markers',
+               opacity = 0.7) %>%
+  layout(scene = list(
+    xaxis = list(title = 'Miles per Gallon (mpg)'),
+    yaxis = list(title = 'Weight (wt)'),
+    zaxis = list(title = 'Horsepower (hp)')),
+    width = 800,
+    height = 400)
+fig
+```
+
+Plotly is also amazing for view 3D plots, as you can rotate the plot to view it from different angles.
+
+```{r}
+data <- mtcars
+fig <- plot_ly(data, 
+               x = ~mpg, 
+               y = ~wt, 
+               z = ~hp, 
+               color = ~cyl, 
+               type = 'scatter3d', 
+               mode = 'markers',
+               opacity = 0.7) %>%
+  layout(scene = list(
+    xaxis = list(title = 'Miles per Gallon (mpg)'),
+    yaxis = list(title = 'Weight (wt)'),
+    zaxis = list(title = 'Horsepower (hp)')),
+    width = 800,
+    height = 400)
+fig
+```
+
+
+### Hover Window/Text
+
+https://plotly.com/r/hover-text-and-formatting/
+
+An amazing feature of Plotly is that you can hover over individual data points to get additional information. At the basic level, the hover window will give you information about a point's exact x and y values. However, you can also have the hover window display information about a data point's other values that aren't being directly plotted. You can then use the "text" argument to format exactly how you want the hover window information laid out. In the figure below showing sepal measurements for a variety of different Iris flowers, the hover window for any particular flower has been configured to display additional information about it's petal measurments as well. 
+
+
+```{r}
+df_iris <- datasets::iris
+df_iris$species <- as.character(df_iris$Species)
+df_iris$species_id <- as.numeric(df_iris$Species)
+
+# Create the plotly scatter plot
+fig <- plot_ly(df_iris, x = ~Sepal.Width, y = ~Sepal.Length, 
+               color = ~species, size = ~Petal.Length, 
+               hoverinfo = 'text',
+               text = ~paste(
+                 'Sepal Width:', Sepal.Width, '<br>',
+                 'Sepal Length:', Sepal.Length, '<br>',
+                 'Petal Width:', Petal.Width, '<br>',
+                 'Petal Length:', Petal.Length, '<br>',
+                 'Species ID:', species_id
+               )) %>%
+  add_markers()
+
+# Customize the hover template
+fig <- fig %>% layout(
+    title = 'Iris Dataset Scatter Plot',
+    xaxis = list(title = 'Sepal Width'),
+    yaxis = list(title = 'Sepal Length'),
+    legend = list(title = list(text = 'Species')),
+    hoverlabel = list(bgcolor = "white"),
+    hovermode = "closest")
+
+fig
+```
+
+
+
+### Sliders, Buttons/Dropdowns, and Range Selectors
+
+Sliders, buttons/dropdown, and range sliders are the other major interactive features that can be added to Plotly plots. They allow you to change aspects of the plot like the focal subset of the data, layout and styling elements, graph style, and viewing range  for a selectable option value that you can interactively specify.
+
+For both sliders and dropdowns, the first key argument to create the interactivity is  the "method" argument inside the "steps" list. Specifically, the "restyle" method specifies that the data and style attributes of the plot's traces should be updated when a new slider or dropdown option is selected. There are also the "relayout" and "update" methods that can be chosen. "relayout" specifies that the layout and formatting options should be updated when a new slider or dropdown option is selected, and the "update" method is a combination of both "restyle" and "relayout", i.e. change data and layout aspects. 
+
+The second key argument is the "args" argument, which specifies what the new chosen option should do in terms of altering the data subset or plot layout. Lastly, the "label" argument allows you to control what the buttons or slider ticks are labeled as.
+
+
+### Shiny
+Shiny is a web application framework for R that allows you to create interactive web applications. Shiny is somewhat alternative and adjacent to Plotly, as it can also handle interactivity features like buttons, sliders, and dropdown menus. However, while the main plot can be updated when you choose different options, the output plot(s) themselves are static and not interactive. For example, while you could choose a button to change the color of a line in a plot, you wouldn't be able to hover over the line to see the exact x and y values of a point like Plotly allows for. However, Shiny can be used in conjunction with Plotly! This means users can decide to have Shiny handle the selectable interactivity features of a plot like buttons, and then use Plotly to create the plot itself for access to features like hover data.
+
+There are two major components of a Shiny app. The first is specifying specifying a UI layout to specify where the elements go, like the plots and the sidebar menu elements. It's here that you can also specify interactivity features like buttons and sliders. The second is the server logic, which is where you specify how the plot should change when a new option is selected. If using Plotly to create the plot, this involves using the renderPlotly() function to specify how the plot itself is created, and then, if using Shiny's interactivity features like buttons or sliders, defining a reactive expression to specify how the plot should be updated when a new option is selected.
+
+
+#### Buttons/Dropdown Menus (officially called "Buttons")
+
+https://plotly.com/r/dropdowns/
+
+Here's a simple example of a plot with dropdown menus that allows you to specify whether a sine or cosine wave curve is shown, and what color the line is. Here, even though both curves are initially plotted, the "visible" argument is used to specify whether the sine or cosine curve is shown.
+
+
+```{r}
+x <- seq(-2 * pi, 2 * pi, length.out = 1000)
+df <- data.frame(x, y1 = sin(x), y2 = cos(x))
+fig <- plot_ly(df, x = ~x)
+fig <- fig %>% add_lines(y = ~y1, name = "A")
+fig <- fig %>% add_lines(y = ~y2, name = "B", visible = F)
+fig <- fig %>% layout(
+    title = "Drop down menus - Styling",
+    xaxis = list(domain = c(0.1, 1)),
+    yaxis = list(title = "y"),
+
+    updatemenus = list(
+      list(
+        y = 0.8,
+        buttons = list(
+          list(method = "restyle",
+               args = list("line.color", "blue"),
+               label = "Blue"),
+          list(method = "restyle",
+               args = list("line.color", "red"),
+               label = "Red"))),
+      list(
+        y = 0.7,
+        buttons = list(
+          list(method = "restyle",
+               args = list("visible", list(TRUE, FALSE)),
+               label = "Sin"),
+          list(method = "restyle",
+               args = list("visible", list(FALSE, TRUE)),
+               label = "Cos")))
+    )
+  )
+
+fig
+```
+
+Here is another example of a plot with dropdown menus that allows you to specify that only data for countries from a particular continent be shown, allowing you to observe how life expectancy differed between the countries of different continents in 2007. HOWEVER, this code uses Shiny to build the buttons rather than Plotly's button functionality. Unfortunately, while Plotly can handle updating layout elements of a plot with buttons, I personally had a lot of trouble getting it to properly update data elements with buttons. Thus, I used Shiny to handle the button functionality instead.
+
+
+```{r}
+df <- gapminder
+
+# UI for Shiny app
+ui <- fluidPage(
+  titlePanel("Life Expectancy by Continental Countries"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("continent", "Select Continent:", choices = unique(df$continent), selected = "Asia")
+    ),
+    mainPanel(
+      plotlyOutput("plot")
+    )
+  )
+)
+
+# Server logic for Shiny app
+server <- function(input, output) {
+  # Reactive expression for filtered data
+  filtered_data <- reactive({
+    df %>% filter(continent == input$continent & year == 2007)
+  })
+  
+  output$plot <- renderPlotly({
+    data <- filtered_data()
+    
+    plot_ly(data = data, x = ~country, y = ~lifeExp, type = 'bar') %>%
+      layout(
+        title = paste('Life Expectancy by Continental Countries in', 2007),
+        xaxis = list(categoryorder = "array", categoryarray = data$country)
+      )
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+```
+
+
+#### Sliders
+https://plotly.com/r/sliders/
+
+Here's an example of a plot with a slider that allows you to specify data from a particular year be shown, allowing you to observe how life expectancy across Asian countries has changed over time. As in the previous button example, this uses Shiny to build the slider rather than Plotly's slider functionality.
+
+```{r}
+df <- gapminder
+
+# UI for Shiny app
+ui <- fluidPage(
+  titlePanel("Life Expectancy by Country in Asia Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("year", "Select Year:", 
+                  min = min(df$year), max = max(df$year), value = 1952, step = 5)
+    ),
+    mainPanel(
+      plotlyOutput("plot")
+    )
+  )
+)
+
+# Server logic for Shiny app
+server <- function(input, output) {
+  # Reactive expression for filtered data
+  filtered_data <- reactive({
+    df %>% filter(year == input$year & continent == "Asia")
+  })
+  
+  output$plot <- renderPlotly({
+    data <- filtered_data()
+    
+    plot_ly(data = data, x = ~country, y = ~lifeExp, type = 'bar') %>%
+      layout(
+        title = paste('Life Expectancy by Country in Asia in', input$year),
+        xaxis = list(categoryorder = "array", categoryarray = data$country)
+      )
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+
+```
+
+#### Animations
+
+Similar to sliders, animations allow you to observe how data changes across some variable value. Animations are basically sliders with a play button to cycle through all the values, but are extremely easy to build in plotly with the "frame" argument.
+
+```{r}
+df_cnt <- gapminder
+
+# Create the plotly bar chart with animations
+fig <- plot_ly(data = df_cnt, 
+               x = ~continent, 
+               y = ~pop, 
+               color = ~continent,
+               frame = ~year, 
+               ids = ~country, 
+               hoverinfo = 'text', 
+               text = ~paste("Country:", country, "<br>Population:", pop),
+               type = 'bar') %>%
+  layout(yaxis = list(range = c(0, 4000000000)),
+         title = "Population by Continent Over Time")
+         
+fig
+```
+
+Here's an alternative example of the same animation built using Shiny's functionality rather than Plotly's.
+
+```{r}
+df_cnt <- gapminder
+
+# UI for Shiny app
+ui <- fluidPage(
+  titlePanel("Population by Continent Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("year", "Select Year:", 
+                  min = min(df_cnt$year), max = max(df_cnt$year), value = min(df_cnt$year), step = 5, animate = TRUE)
+    ),
+    mainPanel(
+      plotlyOutput("plot")
+    )
+  )
+)
+
+# Server logic for Shiny app
+server <- function(input, output) {
+  # Reactive expression for filtered data
+  filtered_data <- reactive({
+    df_cnt %>% filter(year == input$year)
+  })
+  
+  output$plot <- renderPlotly({
+    data <- filtered_data()
+    
+    plot_ly(data = data, 
+            x = ~continent, 
+            y = ~pop, 
+            color = ~continent,
+            ids = ~country, 
+            hoverinfo = 'text', 
+            text = ~paste("Country:", country, "<br>Population:", pop),
+            type = 'bar') %>%
+      layout(yaxis = list(range = c(0, 4000000000)),
+             title = paste("Population by Continent in", input$year))
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+```
+
+#### Slider and Dropdown together
+
+Again using Shiny, you can combine sliders and dropdown menus to allow for more complex interactivity. Here's an example of a plot with a slider and dropdown menu that allows you to specify data from a particular year and continent be shown, allowing you to observe how life expectancy across countries of a particular continent has changed over time.
+
+```{r}
+df <- gapminder
+
+# UI for Shiny app
+ui <- fluidPage(
+  titlePanel("Life Expectancy by Country in Selected Continent Over Time"),
+  sidebarLayout(
+    sidebarPanel(
+      selectInput("continent", "Select Continent:", choices = unique(df$continent), selected = "Asia"),
+      sliderInput("year", "Select Year:", 
+                  min = min(df$year), max = max(df$year), value = 1952, step = 5, animate = TRUE)
+    ),
+    mainPanel(
+      plotlyOutput("plot")
+    )
+  )
+)
+
+# Server logic for Shiny app
+server <- function(input, output) {
+  # Reactive expression for filtered data
+  filtered_data <- reactive({
+    df %>% filter(continent == input$continent & year == input$year)
+  })
+  
+  output$plot <- renderPlotly({
+    data <- filtered_data()
+    
+    plot_ly(data = data, 
+            x = ~country, 
+            y = ~lifeExp, 
+            type = 'bar', 
+            color = ~country,
+            text = ~paste("Country:", country, "<br>Life Expectancy:", lifeExp),
+            hoverinfo = 'text') %>%
+      layout(
+        title = paste('Life Expectancy by Country in', input$continent, 'in', input$year),
+        xaxis = list(categoryorder = "array", categoryarray = data$country)
+      )
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+```
+
+### Range sliders/selectors 
+
+https://plotly.com/r/range-slider/
+
+Range sliders are a bit different from regular sliders, as they allow you to specify a range of values to be shown in the plot. You can also add range buttons that allow you to quickly zoom in on a particular range of values. Here's an example of a plot showing Apple's stock prices over time with a range slider and range buttons that allows you to specify and zoom in on the price within a particular timeframe.
+
+```{r}
+getSymbols(Symbols = c("AAPL", "MSFT"), from = '2018-01-01', to = '2019-01-01')
+ds <- data.frame(Date = index(AAPL), AAPL[,6], MSFT[,6])
+
+
+fig <- plot_ly(ds, x = ~Date)
+fig <- fig %>% add_lines(y = ~AAPL.Adjusted, name = "Apple")
+fig <- fig %>% add_lines(y = ~MSFT.Adjusted, name = "Microsoft")
+fig <- fig %>% layout(
+    title = "Stock Prices",
+    xaxis = list(
+      rangeselector = list(
+        buttons = list(
+          list(
+            count = 3,
+            label = "3 mo",
+            step = "month",
+            stepmode = "backward"),
+          list(
+            count = 6,
+            label = "6 mo",
+            step = "month",
+            stepmode = "backward"),
+          list(
+            count = 1,
+            label = "1 yr",
+            step = "year",
+            stepmode = "backward"),
+          list(
+            count = 1,
+            label = "YTD",
+            step = "year",
+            stepmode = "todate"),
+          list(step = "all"))),
+      rangeslider = list(type = "date")),
+    yaxis = list(title = "Price"))
+
+fig
+```
+
+
+## Subplots
+
+https://plotly.com/r/subplots/
+
+You can easily create multi-panel plots in Plotly, allowing you to include multiple plots as subplots in a single figure.
+
+```{r}
+#Initialize figures 
+fig1 <- plot_ly(x = c(1,2,3), y = c(4,5,6), type = 'scatter', mode = 'lines+markers', 
+                marker = list(line = list(width = 3)))%>%
+  layout(xaxis = list(title = 'xaxis1 title'), yaxis = list(title = 'yaxis1 title'))
+fig2 <- plot_ly(x = c(20,30,40), y = c(50,60,70), type = 'scatter', mode = 'lines+markers',
+                marker = list(line = list(width = 3)))%>%
+  layout(xaxis = list(title = 'xaxis2 title', range = c(10,50)), yaxis = list(title = 'yaxis2 title', range = c(40,80)))
+fig3 <- plot_ly(x = c(300,400,500), y = c(600,700,800), type = 'scatter', mode = 'lines+markers', 
+                marker = list(line = list(width = 3)))%>%
+  layout(xaxis = list(title = 'xaxis3 title', showgrid = FALSE), yaxis = list(title = 'yaxis3 title', showgrid = FALSE))
+fig4 <- plot_ly(x = c(4000,5000,6000), y = c(7000,8000,9000), type = 'scatter', mode = 'lines+markers', 
+                marker = list(line = list(width = 3)))%>%
+  layout(xaxis = list(title = 'xaxis4 title', type = 'log'), yaxis = list(title = 'yaxis4 title'))
+
+
+#creating subplot
+fig <- subplot(fig1, fig2, fig3, fig4, nrows = 2, titleY = TRUE, titleX = TRUE, margin = 0.1 )
+fig <- fig %>%layout(title = 'Customizing Subplot Axes',
+                     plot_bgcolor='#e5ecf6', 
+         xaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'), 
+         yaxis = list( 
+           zerolinecolor = '#ffff', 
+           zerolinewidth = 2, 
+           gridcolor = 'ffff'))
+
+# Update title
+annotations = list( 
+  list( 
+    x = 0.2,  
+    y = 1.0,  
+    text = "Plot 1",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ),  
+  list( 
+    x = 0.8,  
+    y = 1,  
+    text = "Plot 2",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ),  
+  list( 
+    x = 0.2,  
+    y = 0.4,  
+    text = "Plot 3",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ),
+  list( 
+    x = 0.8,  
+    y = 0.4,  
+    text = "Plot 4",  
+    xref = "paper",  
+    yref = "paper",  
+    xanchor = "center",  
+    yanchor = "bottom",  
+    showarrow = FALSE 
+  ))
+fig <- fig %>%layout(annotations = annotations) 
+
+fig
+```
+
+### Scatter Matrix
+
+While a scatter matrix doesn't involve combining subplots into a single figure in the traditional sense, it's a great way to visualize relationships between multiple variables in a single plot, specifically showing each i x j variable combination as a scatterplot in a matrix of scatterplots. Here's an example of a scatter matrix for a bunch of flight data, where points are colored by month.
+
+```{r}
+flights <- read.csv('https://raw.githubusercontent.com/mwaskom/seaborn-data/master/flights.csv')
+
+# Display all data columns
+print("All data columns:")
+print(colnames(flights))
+
+
+# Create the scatter matrix plot
+fig <- plot_ly(
+  data = flights,
+  type = 'splom',
+  dimensions = list(
+    list(label = 'Year', values = ~year),
+    list(label = 'Month', values = ~month),
+    list(label = 'Passengers', values = ~passengers)
+  ),
+  marker = list(
+    color = ~as.numeric(as.factor(month)),
+    colorscale = 'Viridis',
+    showscale = FALSE
+  )
+)
+
+fig <- fig %>%
+  layout(
+    legend = list(
+      title = list(text = 'Month'),
+      itemsizing = 'constant',
+      tracegroupgap = 0
+    )
+  )
+
+fig
+```
+
+
+## Outputting Plotly plots
+
+Plotly plots can be saved as standalone HTML files, which can be shared with others or embedded in web applications. You can also save plots as PNG, SVG*, PDF, a JSON file like mentioned earlier, and... probably a bunch of other things.
+
+```{r}
+
+df <- gapminder 
+# Create the plot
+fig <- plot_ly(data = df, 
+               x = ~gdpPercap, 
+               y = ~lifeExp, 
+               # size = ~pop, #Specifiying that the point size be based on the population size causes an error for me for some odd reason, maybe your results will vary if you want to uncomment this and try it out
+               color = ~continent, 
+               text = ~country, 
+               frame = ~year, 
+               type = 'scatter', 
+               mode = 'markers',
+               marker = list(sizemode = 'diameter', sizeref = 2e5, sizemin = 1)) 
+fig <- fig %>%
+  layout(xaxis = list(type = 'log', range = c(log10(100), log10(100000)), title = 'GDP per Capita'),
+         yaxis = list(range = c(25, 90), title = 'Life Expectancy'))
+# fig
+
+# Save the plot as a PNG
+export(fig, file = 'plot.png')
+
+# Save the plot as a PDF
+export(fig, file = 'plot.pdf')
+
+# Save the plot as an HTML file
+saveWidget(fig, file = 'plot.html')
+
+# Save the plot as a JSON file
+json_content <- plotly_json(fig, jsonedit = FALSE)
+write(json_content, file = 'plot.json')
+
+# Unfortunately I can't seem to get the export as an SVG working in R... let me know if you figure it out!
+# Save the plot as a SVG file
+# export(fig, file = 'plot.svg')
+```
+
+## Example plots and customization options
+At the same point here in the Python version of this tutorial, there is an enormous list of example plots as a showcase of what Plotly can do (which I did not make, the credit goes to a tutorial I found elsewhere). Instead of me trying to translate all of those into R, I recommend you just go to the Python version of this tutorial and look at the plots there. While obviously not exactly the same, the syntax and structure for Python Plotly plots is pretty similar to R Plotly, so you should hopefully be able to understand at least the major details of example without too much trouble.
+
+
