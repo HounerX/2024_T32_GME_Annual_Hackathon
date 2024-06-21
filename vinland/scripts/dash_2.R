@@ -5,6 +5,7 @@ library(plotly)
 
 source("gwas.R")
 source("eQTLsummary_per_SNP.R")
+source("LD_matrix_maker.R")
 
 
 # Initialize the Dash app
@@ -27,8 +28,12 @@ app$layout(
           dccGraph(id = 'eQTL-summary-graph'),
           style = list(width = '49%', height='25%',display = 'inline-block')
       ),
+      #div(
+      #  dccGraph(id = 'GGV-plot'),
+      #  style = list(width = '49%', height='25%',display = 'inline-block')
+      #),
       div(
-        dccGraph(id = 'GGV-plot'),
+        dccGraph(id = 'LD-plot'),
         style = list(width = '49%', height='25%',display = 'inline-block')
       )
     )
@@ -62,16 +67,27 @@ app %>% add_callback(
   
 # GGV ember 
 
+#app %>% add_callback(
+#  output('GGV-plot', 'children'),
+#  input('GWAS-summary-graph', 'hoverData'),
+#  function(hoverData){
+#    rsid=hoverData$points[[1]]$customdata
+#    return(Iframe(src = "https://www.example.com", style = list(height = 400, width = "100%")))
+#  }
+#)
+
+# LD plot 
 app %>% add_callback(
-  output('GGV-plot', 'children'),
-  input('GWAS-summary-graph', 'hoverData'),
-  function(hoverData){
-    rsid=hoverData$points[[1]]$customdata
-    return(Iframe(src = "https://www.example.com", style = list(height = 400, width = "100%")))
+  output('LD-plot', 'figure'),
+  list(
+    input('GWAS-summary-graph', 'hoverData')
+  ),
+  function(hoverData) {
+    rsid = hoverData$points[[1]]$customdata
+    ld_plot_maker(rsid)
   }
+  
 )
-
-
 
 
 # Run the app
