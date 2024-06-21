@@ -1,3 +1,4 @@
+
 library(dash)
 library(plotly)
 #library(dashHtmlComponents)
@@ -5,6 +6,7 @@ library(plotly)
 
 source("gwas.R")
 source("eQTLsummary_per_SNP.R")
+source("LD_matrix_maker.R")
 
 
 # Initialize the Dash app
@@ -28,6 +30,10 @@ app$layout(
         ),
         dccGraph(id = 'eQTL-summary-graph',
           style = list(width = '20%', height='200px',display = 'inline-block')
+        ),
+        div(
+          dccGraph(id = 'LD-plot'),
+          style = list(width = '49%', height='25%',display = 'inline-block')
         )
       ),
       div(
@@ -108,6 +114,19 @@ app %>% add_callback(
 )
 
 
+# LD plot 
+app %>% add_callback(
+  output('LD-plot', 'figure'),
+  list(
+    input('GWAS-summary-graph', 'hoverData')
+  ),
+  function(hoverData) {
+    rsid = hoverData$points[[1]]$customdata
+    ld_plot_maker(rsid)
+  }
+  
+)
+
 # GGV embed
 
 app %>% add_callback(
@@ -127,8 +146,6 @@ app %>% add_callback(
 
 
 
-
-# Run the app
 port = 8000
 print(paste0('Dash app running on http://127.0.0.1:', port, '/'))
 app %>% run_app(port = port)

@@ -27,7 +27,6 @@ Disclaimer, I did not make the majority of it (the original is the second exampl
 ```{r}
 library(dash)
 library(dplyr)
-library(shiny)
 ```
 
 ```{r}

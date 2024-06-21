@@ -12,11 +12,26 @@ app %>% set_layout(
   #     ),
   #   style = list(width = '49%', float = 'right', display = 'inline-block')
   #   ),
+  #div(
+   # dccGraph(id='Manhattan'),
+  #  style = list(width = '49%', float = 'right', display = 'inline-block')
+  #),
+
   div(
-    dccGraph(id='Manhattan'),
-    style = list(width = '49%', float = 'right', display = 'inline-block')
-  ),
-)
+    dccDropdown(
+      id = "Disease",
+      options = option_indicator,
+      value = "Fertility rate, total (births per woman)"
+    ),
+    style = list(width = "49%", display = "inline-block")
+  )
+  
+  
+  
+  
+  
+  
+  )
   
   app %>% add_callback(
     output('Manhattan', 'figure'),

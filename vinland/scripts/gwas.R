@@ -1,5 +1,4 @@
 library(plotly)
-library(shiny)
 library(ggplot2)
 library(dplyr)
 library(jsonlite)
@@ -16,7 +15,7 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
   eQTL_file=read.csv("../data/cis_eqtls_S10.csv",header = TRUE)
   
   
-  
+  ldid=read.table("../data/uniq_rs",stringsAsFactors = FALSE)
   
   filename=gwas_file[gwas_file$disease==disease_name,"path"]
   
@@ -38,6 +37,9 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
   df_filtered$index=c(1:NROW(df_filtered))
   
   df_filtered$is_cis_eQTL <- as.numeric(df_filtered$variant_id %in% eQTL_file$SNP)  
+  df_filtered$is_in_LD <- as.numeric(df_filtered$variant_id %in% ldid$V1)
+  
+  df_filtered$isboth <- df_filtered$is_cis_eQTL+df_filtered$is_in_LD
   
   fig_gwas <- plot_ly(data = df_filtered, 
                  x = ~index, 
@@ -55,6 +57,25 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
                                 '<br>bp:', base_pair_location),
                 customdata = ~variant_id
                 ) %>% hide_colorbar() 
+  # fig_gwas = fig_gwas %>% add_trace(
+  #   data = df_filtered[df_filtered$is_cis_eQTL==1,],
+  #   x = ~index,
+  #   y = ~-log10(p_value),
+  #   # size = ~pop, #Specifiying that the point size be based on the population size causes an error for me for some odd reason, maybe your results will vary if you want to uncomment this and try it out
+  #   color = 'red',
+  #   #text = ~country,
+  #   # frame = ~year,
+  #   type = 'scatter',
+  #   mode = 'markers',
+  #   marker = list(size=5),
+  #   #showlegend=FALSE,
+  #   hoverinfo = 'text',
+  #   text = ~paste('ID:', variant_id,
+  #                 '<br>chr:', chromosome,
+  #                 '<br>bp:', base_pair_location),
+  #   customdata = ~variant_id
+  # )
+  
   fig_gwas = fig_gwas %>% add_trace(
     data = df_filtered[df_filtered$is_cis_eQTL==1,],
     x = ~index,
@@ -73,6 +94,7 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
                   '<br>bp:', base_pair_location),
     customdata = ~variant_id
   )
+  
   return(fig_gwas)
 
 }
