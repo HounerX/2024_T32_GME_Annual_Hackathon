@@ -1,3 +1,4 @@
+
 library(dash)
 library(plotly)
 #library(dashHtmlComponents)
@@ -15,30 +16,61 @@ app <- Dash$new()
 app$layout(
   div(
     list(
-      dccDropdown(
-        id = 'GWAS-dataset-dropdown',
-        options = list(
-          list(label = 'UC', value = 'UC'),
-          list(label = 'CD', value = 'CD')
+      div(
+        dccDropdown(
+          id = 'GWAS-dataset-dropdown',
+          options = list(
+            list(label = 'UC', value = 'UC'),
+            list(label = 'CD', value = 'CD')
+          ),
+          value = 'UC'
         ),
-        value = 'UC'
-      ),
-      dccGraph(id = 'GWAS-summary-graph'),
-      div(
-          dccGraph(id = 'eQTL-summary-graph'),
+        dccGraph(id = 'GWAS-summary-graph',
+         style = list(width = '80%', height='200px',display = 'inline-block')
+        ),
+        dccGraph(id = 'eQTL-summary-graph',
+          style = list(width = '20%', height='200px',display = 'inline-block')
+        ),
+        div(
+          dccGraph(id = 'LD-plot'),
           style = list(width = '49%', height='25%',display = 'inline-block')
+        )
       ),
-      #div(
-      #  dccGraph(id = 'GGV-plot'),
-      #  style = list(width = '49%', height='25%',display = 'inline-block')
-      #),
       div(
-        dccGraph(id = 'LD-plot'),
-        style = list(width = '49%', height='25%',display = 'inline-block')
+        dccMarkdown(id = 'markdown-block',
+                    children= "
+          ```Hover over a SNP in the GWAS plot 
+          ```",
+                    style = list(width = '100%',display = 'inline-block')
+        )
+      ),
+     #   div(
+     
+       #   style = list(width = '20%', height='2000px',display = 'inline-block')
+      #  )
+      #,
+      # dccMarkdown('
+      #   #### Dash and Markdown
+      #   Dash supports [Markdown](http://commonmark.org/help).
+      #   Markdown is a simple way to write and format text.
+      #   It includes a syntax for things like **bold text** and *italics*,
+      #   [links](http://commonmark.org/help), inline `code` snippets, lists,
+      #   quotes, and more.'),
+     div(
+        html$iframe(
+          src = 'http://popgen.uchicago.edu/ggv', 
+          #style = list(height = 400, width = 100),
+          id = 'GGV-plot',
+          style = list(width = '60%', height='600px',display = 'inline-block')
+       #   style = list(width = '100px', display = 'inline-block')
+        )
+        #style = list(width = '100%', display = 'inline-block')
       )
     )
   )
 )
+
+
       
 
     
@@ -65,16 +97,22 @@ app %>% add_callback(
     eQTLsumm_plot_maker(rsid)}
 )
   
-# GGV ember 
+# Markdown 
+app %>% add_callback(
+  output(id='markdown-block', property = 'children'),
+  input('GWAS-summary-graph', 'hoverData'),
+  function(hoverData){
+    rsid=hoverData$points[[1]]$customdata
+    markdown_text <- paste('#### Link Outs\n
+                 \n GGV link: (https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
+                  rsid,
+                  ')\n\n UCSC Genome Browser link: (http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&knownGene=pack&position=',
+                  rsid,')',
+                  sep="")
+    return(markdown_text)
+  }
+)
 
-#app %>% add_callback(
-#  output('GGV-plot', 'children'),
-#  input('GWAS-summary-graph', 'hoverData'),
-#  function(hoverData){
-#    rsid=hoverData$points[[1]]$customdata
-#    return(Iframe(src = "https://www.example.com", style = list(height = 400, width = "100%")))
-#  }
-#)
 
 # LD plot 
 app %>% add_callback(
@@ -89,8 +127,25 @@ app %>% add_callback(
   
 )
 
+# GGV embed
 
-# Run the app
+app %>% add_callback(
+  output(id='GGV-plot', property = 'src'),
+  input('GWAS-summary-graph', 'hoverData'),
+  function(hoverData){
+    rsid=hoverData$points[[1]]$customdata
+    url <- paste('https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
+                 rsid,
+                 sep="")
+    #return(html$iframe(src = url, style = list(height = 400, width = 100)))
+    return(url)
+        #return(html$iframe('https://www.example.com'))
+    #return(html$iframe(src = 'http://www.example.com', style = list(height = 400, width = 100)))
+  }
+)
+
+
+
 port = 8000
 print(paste0('Dash app running on http://127.0.0.1:', port, '/'))
 app %>% run_app(port = port)
