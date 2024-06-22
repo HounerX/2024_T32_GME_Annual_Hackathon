@@ -8,6 +8,7 @@ source("gwas.R")
 source("eQTLsummary_per_SNP.R")
 source("LD_matrix_maker.R")
 
+ld_mat = readRDS("precal_ldmat.rds")
 
 # Initialize the Dash app
 app <- Dash$new()
@@ -89,63 +90,65 @@ app$callback(
 app %>% add_callback(
   output('eQTL-summary-graph','figure'),
   list(
-    input('GWAS-summary-graph','hoverData')
+    input('GWAS-summary-graph','clickData')
   ),
-  function(hoverData){
+  function(clickData){
    
-    rsid=hoverData$points[[1]]$customdata
+    rsid=clickData$points[[1]]$customdata
     eQTLsumm_plot_maker(rsid)}
 )
   
-# Markdown 
-app %>% add_callback(
-  output(id='markdown-block', property = 'children'),
-  input('GWAS-summary-graph', 'hoverData'),
-  function(hoverData){
-    rsid=hoverData$points[[1]]$customdata
-    markdown_text <- paste('#### Link Outs\n
-                 \n GGV link: (https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
+# Markdown
+ app %>% add_callback(
+   output(id='markdown-block', property = 'children'),
+   input('GWAS-summary-graph', 'clickData'),
+   function(clickData){
+     rsid=clickData$points[[1]]$customdata
+     markdown_text <- paste('#### Link Outs\n
+                  \n GGV link: (https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
+                   rsid,
+                   ')\n\n UCSC Genome Browser link: (http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&knownGene=pack&position=',
+                   rsid,')',
+                   sep="")
+     return(markdown_text)
+   }
+ )
+
+ 
+ #LD plot
+
+ app %>% add_callback(
+   output('LD-plot', 'figure'),
+   list(
+    input('GWAS-summary-graph', 'clickData')
+   ),
+ function(clickData) {
+     rsid = clickData$points[[1]]$customdata
+     ld_plot_maker(rsid,ld_mat)
+   }
+
+ )
+
+
+ # GGV embed
+ 
+ app %>% add_callback(
+   output(id='GGV-plot', property = 'src'),
+   input('GWAS-summary-graph', 'clickData'),
+   function(clickData){
+     rsid=clickData$points[[1]]$customdata
+     url <- paste('https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
                   rsid,
-                  ')\n\n UCSC Genome Browser link: (http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&knownGene=pack&position=',
-                  rsid,')',
                   sep="")
-    return(markdown_text)
+     #return(html$iframe(src = url, style = list(height = 400, width = 100)))
+     return(url)
+   #      return(html$iframe('https://www.example.com'))
+    # return(html$iframe(src = 'http://www.example.com', style = list(height = 400, width = 100)))
   }
-)
-
-
-# LD plot 
-app %>% add_callback(
-  output('LD-plot', 'figure'),
-  list(
-    input('GWAS-summary-graph', 'hoverData')
-  ),
-  function(hoverData) {
-    rsid = hoverData$points[[1]]$customdata
-    ld_plot_maker(rsid)
-  }
-  
-)
-
-# GGV embed
-
-app %>% add_callback(
-  output(id='GGV-plot', property = 'src'),
-  input('GWAS-summary-graph', 'hoverData'),
-  function(hoverData){
-    rsid=hoverData$points[[1]]$customdata
-    url <- paste('https://popgen.uchicago.edu/ggv/?data=%221000genomes%22&rsid=',
-                 rsid,
-                 sep="")
-    #return(html$iframe(src = url, style = list(height = 400, width = 100)))
-    return(url)
-        #return(html$iframe('https://www.example.com'))
-    #return(html$iframe(src = 'http://www.example.com', style = list(height = 400, width = 100)))
-  }
-)
+ )
 
 
 
-port = 8000
+port = 8200
 print(paste0('Dash app running on http://127.0.0.1:', port, '/'))
 app %>% run_app(port = port)

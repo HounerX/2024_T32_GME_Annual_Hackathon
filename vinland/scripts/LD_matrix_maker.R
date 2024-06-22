@@ -6,8 +6,7 @@ f <- function(x) {
 }
 source("sad_face_maker.R")
 
-ld_plot_maker <- function(snp_to_query, window_size = 1000){
-  ld_mat = readRDS("precal_ldmat.rds")
+ld_plot_maker <- function(snp_to_query,ld_mat, window_size = 1000){
   #ld_mat=read.table("../data/ld_matrix.ld",header = TRUE,stringsAsFactors = FALSE)
   
   bim_file=read.table("../data/yazar_final.bim",stringsAsFactors = FALSE)

@@ -77,7 +77,7 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
   # )
   
   fig_gwas = fig_gwas %>% add_trace(
-    data = df_filtered[df_filtered$is_cis_eQTL==1,],
+    data = df_filtered[df_filtered$isboth==2,],
     x = ~index,
     y = ~-log10(p_value),
     # size = ~pop, #Specifiying that the point size be based on the population size causes an error for me for some odd reason, maybe your results will vary if you want to uncomment this and try it out
@@ -94,7 +94,7 @@ gwas_plot_maker<-function(disease_name="UC",display_thres_cutoff=0.01){
                   '<br>bp:', base_pair_location),
     customdata = ~variant_id
   )
-  
+
   return(fig_gwas)
 
 }
